@@ -25,53 +25,41 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
 
-    
     public AppUser register(RegisterRequest request) {
-        
-        
         if (userRepository.findByUsername(request.username()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
 
-        
         AppUser user = new AppUser();
         user.setUsername(request.username());
         
+        // 1. ADDED THIS LINE: Request eken ena fullName eka database ekata save karanna set karanawa
+        user.setFullName(request.fullName());
         
         user.setPassword(passwordEncoder.encode(request.password()));
-        
-        
         user.setRole(Role.valueOf(request.role().toUpperCase()));
 
-        
         return userRepository.save(user);
     }
 
-    
     public AuthResponse login(LoginRequest request) {
-        
-        
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
 
-        
         AppUser user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
-
-        
         String jwtToken = jwtService.generateToken(userDetails.getUsername(), user.getRole().name());
 
-        
         return new AuthResponse(
                 jwtToken,
                 "Bearer",
                 3600000,
                 user.getUsername(),
-                user.getUsername(),
+                
+                user.getFullName(), 
                 user.getRole().name()
         );
     }
